@@ -62,8 +62,44 @@ Runs on `http://localhost:5173`. The API URL defaults to `http://localhost:8000`
 
 ## Deployment
 
-- **Backend:** Railway or Render. Set `GEMINI_API_KEY` as an environment variable. Use `uvicorn main:app --host 0.0.0.0 --port $PORT` as the start command.
-- **Frontend:** Vercel or Netlify (static site). Set `VITE_API_URL` to the deployed backend URL.
+### Backend — Render
+
+1. Push your repo to GitHub.
+2. Go to [render.com](https://render.com) → New → Web Service → connect your repo.
+3. Select the `DatasetExplorer/backend` directory as the root.
+4. Set:
+   - **Runtime:** Python
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - **Health Check Path:** `/tables`
+5. Add environment variable:
+   - `GEMINI_API_KEY` — your Gemini API key
+6. Deploy. Once live, note the URL (e.g., `https://dataset-explorer-api.onrender.com`).
+
+A `render.yaml` file is included for Blueprint-based deployment.
+
+### Frontend — Vercel
+
+1. Push your repo to GitHub.
+2. Go to [vercel.com](https://vercel.com) → Add New Project → import your repo.
+3. Set:
+   - **Framework Preset:** Vite
+   - **Root Directory:** `DatasetExplorer/frontend`
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+4. Add environment variable:
+   - `VITE_API_URL` — your Render backend URL (e.g., `https://dataset-explorer-api.onrender.com`)
+5. Deploy.
+
+### Connecting Them
+
+Set `VITE_API_URL` on Vercel to your Render backend URL. The frontend will use that as the API base for all requests. No CORS issues — the backend already allows all origins.
+
+### Staying Awake
+
+Render's free tier spins down after 15 minutes of inactivity. The first request after idle takes ~30s to wake up. For demo purposes this is fine. To keep it warm:
+- Set up a free cron job (e.g., cron-job.org) to ping `/tables` every 10 minutes.
+- Or upgrade to Render's $7/mo Starter plan (no sleep).
 
 ## API Endpoints
 
