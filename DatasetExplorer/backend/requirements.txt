@@ -1,6 +1,6 @@
 fastapi
-uvicorn
-pandas
+uvicorn[standard]
 python-multipart
 python-dotenv
-httpx
+google-genai
+duckdb

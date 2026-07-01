@@ -1,15 +1,16 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-import pandas as pd
-import io
 import os
 from dotenv import load_dotenv
 
+from database import load_csv, get_tables, get_rows, get_table_schema, execute_sql, get_sample_rows
+from models import UploadResponse, TablesResponse, RowQueryResponse, AskRequest, AskResponse
+from llm import generate_sql, interpret_results
+
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(title="Dataset Explorer API")
 
-# Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,40 +18,79 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage for simplicity, but could be SQLite
-data_store = {}
 
-@app.post("/upload")
+@app.post("/upload", response_model=UploadResponse)
 async def upload_csv(file: UploadFile = File(...)):
-    if not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Invalid file type")
-    
+    if not file.filename or not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only .csv files are supported")
+
     contents = await file.read()
-    df = pd.read_csv(io.BytesIO(contents))
-    data_store["df"] = df
-    
-    return {"message": "File uploaded successfully", "rows": len(df)}
+    table_name = os.path.splitext(file.filename)[0]
 
-@app.get("/rows")
-async def get_rows(page: int = 1, limit: int = 10):
-    if "df" not in data_store:
-        raise HTTPException(status_code=404, detail="No data uploaded")
-    
-    df = data_store["df"]
-    start = (page - 1) * limit
-    end = start + limit
-    
-    rows = df.iloc[start:end].to_dict(orient="records")
-    return {"data": rows, "total": len(df)}
+    try:
+        row_count = load_csv(table_name, contents)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load CSV: {str(e)}")
 
-@app.post("/ask")
-async def ask_question(question: str):
-    if "df" not in data_store:
-        raise HTTPException(status_code=404, detail="No data uploaded")
-    
-    # Placeholder for LLM integration
-    return {"answer": f"You asked: {question}. I am currently a placeholder, but I have access to {len(data_store['df'])} rows of data."}
+    schema = get_table_schema(table_name)
+    return UploadResponse(
+        table_name=table_name,
+        columns=schema["columns"] if schema else [],
+        row_count=row_count,
+    )
+
+
+@app.get("/tables", response_model=TablesResponse)
+async def list_tables():
+    tables_data = get_tables()
+    enriched = []
+    for t in tables_data:
+        schema = get_table_schema(t["name"])
+        enriched.append({
+            "name": t["name"],
+            "columns": t["columns"],
+            "row_count": schema["row_count"] if schema else 0,
+        })
+    return TablesResponse(tables=enriched)
+
+
+@app.get("/rows", response_model=RowQueryResponse)
+async def query_rows(
+    table: str = Query(...),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=500),
+    search: str = Query(None),
+):
+    result = get_rows(table, page, per_page, search)
+    return RowQueryResponse(**result)
+
+
+@app.post("/ask", response_model=AskResponse)
+async def ask_question(req: AskRequest):
+    schema = get_table_schema(req.table_name)
+    if not schema:
+        raise HTTPException(status_code=404, detail=f"Table '{req.table_name}' not found")
+
+    sample_rows = get_sample_rows(req.table_name)
+
+    sql = generate_sql(schema, sample_rows, req.question)
+    try:
+        exec_result = execute_sql(sql)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Generated SQL failed: {str(e)}\nSQL: {sql}",
+        )
+
+    answer = interpret_results(req.question, sql, exec_result["rows"], exec_result["row_count"])
+
+    return AskResponse(
+        answer=answer,
+        sql=sql,
+        row_count=exec_result["row_count"],
+    )
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

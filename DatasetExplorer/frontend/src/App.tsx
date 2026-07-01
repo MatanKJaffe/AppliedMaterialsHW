@@ -1,121 +1,76 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect } from 'react'
+import UploadDataset from './components/UploadDataset'
+import DataTable from './components/DataTable'
+import AskQuestion from './components/AskQuestion'
+import SchemaPanel from './components/SchemaPanel'
+import { AppProvider, useAppState } from './context'
+import { getTables } from './api'
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppContent() {
+  const { tables, selectedTable, selectTable } = useAppState()
+
+  useEffect(() => {
+    getTables().then((res) => {
+      if (res.tables.length > 0 && !selectedTable) {
+        selectTable(res.tables[0].name)
+      }
+    })
+  }, [selectedTable, selectTable])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="min-h-screen bg-black text-zinc-100 font-sans antialiased">
+      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs shadow-lg">
+              DE
+            </div>
+            <h1 className="text-lg font-bold tracking-tight">Dataset Explorer</h1>
+          </div>
+          {tables.length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-zinc-400">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              {tables.length} dataset{tables.length > 1 ? 's' : ''} loaded
+            </div>
+          )}
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
+      <main className="max-w-7xl mx-auto p-6">
+        {tables.length === 0 ? (
+          <div className="flex flex-col items-center justify-center min-h-[70vh]">
+            <h2 className="text-4xl font-extrabold tracking-tight mb-3 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+              Unlock AI Data Insights
+            </h2>
+            <p className="text-zinc-400 mb-10 max-w-lg text-center">
+              Upload a CSV dataset to explore its contents and ask natural-language questions.
+            </p>
+            <UploadDataset />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-8rem)]">
+            <aside className="lg:col-span-1 flex flex-col gap-4 overflow-y-auto">
+              <UploadDataset />
+              <SchemaPanel />
+            </aside>
+            <div className="lg:col-span-2 flex flex-col min-h-0">
+              <DataTable />
+            </div>
+            <div className="lg:col-span-1 flex flex-col min-h-0">
+              <AskQuestion />
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   )
 }
 
