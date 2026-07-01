@@ -73,7 +73,10 @@ async def ask_question(req: AskRequest):
 
     sample_rows = get_sample_rows(req.table_name)
 
-    sql = generate_sql(schema, sample_rows, req.question)
+    try:
+        sql = generate_sql(schema, sample_rows, req.question)
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
     try:
         exec_result = execute_sql(sql)
     except Exception as e:
@@ -82,7 +85,10 @@ async def ask_question(req: AskRequest):
             detail=f"Generated SQL failed: {str(e)}\nSQL: {sql}",
         )
 
-    answer = interpret_results(req.question, sql, exec_result["rows"], exec_result["row_count"])
+    try:
+        answer = interpret_results(req.question, sql, exec_result["rows"], exec_result["row_count"])
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     return AskResponse(
         answer=answer,
@@ -93,4 +99,5 @@ async def ask_question(req: AskRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    reload_enabled = os.environ.get("RELOAD", "true").lower() == "true"
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=reload_enabled)
