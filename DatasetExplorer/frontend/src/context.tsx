@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import type { TableInfo } from './types'
 import { getTables } from './api'
 
+// Global state shared across all route-less views.
+// Using Context instead of a heavier lib because the surface area is small.
 interface AppState {
   tables: TableInfo[]
   selectedTable: string | null
@@ -19,6 +21,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Fetches the full table list. Called after uploads and on mount.
   const refreshTables = useCallback(async () => {
     setLoading(true)
     setError(null)

@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { useAppState } from '../context'
 
+// Sidebar panel: lists all loaded datasets and shows the selected table's columns.
+// Refreshes on mount and after uploads via context.refreshTables().
 export default function SchemaPanel() {
   const { tables, selectedTable, selectTable, refreshTables, loading, error } = useAppState()
 

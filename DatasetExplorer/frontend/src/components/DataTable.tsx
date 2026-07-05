@@ -5,6 +5,8 @@ import type { RowQueryResponse, ColumnInfo } from '../types'
 
 const perPage = 25
 
+// Maps DuckDB types to color-coded badges.
+// Helps users quickly identify column types at a glance.
 function TypeBadge({ type }: { type: string }) {
   const colorMap: Record<string, string> = {
     INTEGER: 'text-blue-400 bg-blue-500/10',
@@ -31,6 +33,7 @@ export default function DataTable() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
 
+  // Build a lookup from column name → type using the schema from context
   const selectedSchema = tables.find((t) => t.name === selectedTable)
   const colTypes = new Map<string, string>(
     (selectedSchema?.columns ?? []).map((c: ColumnInfo) => [c.name, c.type])
@@ -49,12 +52,14 @@ export default function DataTable() {
     }
   }, [selectedTable, page, search])
 
+  // Reset pagination and search when switching datasets
   useEffect(() => {
     setPage(1)
     setSearch('')
     setData(null)
   }, [selectedTable])
 
+  // Debounce search input by 300ms to avoid hammering the API
   useEffect(() => {
     const timer = setTimeout(() => fetchData(), 300)
     return () => clearTimeout(timer)

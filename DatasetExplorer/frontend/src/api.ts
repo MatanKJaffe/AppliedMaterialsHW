@@ -1,7 +1,10 @@
 import type { UploadResponse, RowQueryResponse, AskResponse, TablesResponse } from './types'
 
+// Backend URL — configurable at build time via VITE_API_URL or defaults to localhost
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
+// Generic fetch wrapper: injects JSON headers unless the body is FormData,
+// and surfaces API error messages from the {detail} response shape.
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,

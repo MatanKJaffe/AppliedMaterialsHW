@@ -11,6 +11,9 @@ interface Message {
   columns?: string[]
 }
 
+// Chat-style interface for the NL → SQL → NL pipeline.
+// Each assistant message shows the answer and has a collapsible "SQL used" section.
+// Chat history resets when switching datasets (new context).
 export default function AskQuestion() {
   const { selectedTable } = useAppState()
   const [messages, setMessages] = useState<Message[]>([
@@ -24,6 +27,7 @@ export default function AskQuestion() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Reset conversation when switching to a different dataset
   useEffect(() => {
     setMessages([{ role: 'assistant', content: 'Ask a question about the selected dataset.' }])
   }, [selectedTable])
@@ -91,6 +95,7 @@ export default function AskQuestion() {
           </div>
         ))}
         {loading && (
+          // Animated typing indicator: three bouncing dots
           <div className="flex justify-start">
             <div className="bg-zinc-800 rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1.5">
               <div className="w-2 h-2 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: '0ms' }} />

@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 from typing import Optional
 
+# All request/response shapes are explicit Pydantic models.
+# This makes API contracts self-documenting and provides
+# automatic validation + OpenAPI schema generation.
+
 
 class ColumnInfo(BaseModel):
     name: str
@@ -50,10 +54,10 @@ class AskRequest(BaseModel):
 
 
 class AskResponse(BaseModel):
-    answer: str
-    sql: str
-    row_count: int
-    columns: list[str]
+    answer: str       # Natural-language answer from Gemini
+    sql: str          # The generated SQL for transparency
+    row_count: int    # How many rows the SQL returned
+    columns: list[str]  # Column names from the result set
 
 
 class ErrorResponse(BaseModel):

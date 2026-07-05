@@ -1,3 +1,6 @@
+// Mirrors the backend Pydantic models exactly so the frontend
+// always knows the shape of API responses at compile time.
+
 export interface ColumnInfo {
   name: string
   type: string

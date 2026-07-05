@@ -2,6 +2,8 @@ import { useState, useRef, type DragEvent } from 'react'
 import { uploadCSV } from '../api'
 import { useAppState } from '../context'
 
+// Supports both click-to-browse and drag-and-drop.
+// Visual feedback during drag states makes the interaction feel responsive.
 export default function UploadDataset() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,6 +25,7 @@ export default function UploadDataset() {
     try {
       const res = await uploadCSV(file)
       setSuccess(`"${res.table_name}" loaded (${res.row_count.toLocaleString()} rows)`)
+      // Refresh sidebar + auto-select the new dataset
       await refreshTables()
       selectTable(res.table_name)
     } catch (err: unknown) {
@@ -35,6 +38,7 @@ export default function UploadDataset() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) handleFile(file)
+    // Reset so the same file can be re-uploaded
     e.target.value = ''
   }
 

@@ -22,6 +22,8 @@ load_dotenv()
 
 app = FastAPI(title="Dataset Explorer API")
 
+# CORS is wide-open for the exercise — in production, restrict to the
+# frontend's origin.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,6 +36,7 @@ responses = {500: {"model": ErrorResponse}}
 
 @app.post("/upload", response_model=UploadResponse, responses=responses)
 async def upload_csv(file: UploadFile = File(...)):
+    """Accept a CSV file, load it into DuckDB, and confirm the import."""
     if not file.filename or not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only .csv files are supported")
 
@@ -55,6 +58,7 @@ async def upload_csv(file: UploadFile = File(...)):
 
 @app.get("/tables", response_model=TablesResponse, responses=responses)
 async def list_tables():
+    """List all loaded datasets with column info and row counts."""
     tables_data = get_tables()
     enriched = []
     for t in tables_data:
@@ -69,12 +73,14 @@ async def list_tables():
 
 @app.get("/rows", response_model=RowQueryResponse, responses=responses)
 async def query_rows(params: RowQueryParams = Depends()):
+    """Paginated row data with optional cross-column text search."""
     result = get_rows(params.table, params.page, params.per_page, params.search)
     return RowQueryResponse(**result)
 
 
 @app.get("/schema/{table_name}", response_model=SchemaResponse, responses=responses)
 async def table_schema(table_name: str, sample: Optional[bool] = True):
+    """Return table schema plus optional sample rows (used to build LLM context)."""
     schema = get_table_schema(table_name)
     if not schema:
         raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
@@ -89,6 +95,12 @@ async def table_schema(table_name: str, sample: Optional[bool] = True):
 
 @app.post("/ask", response_model=AskResponse, responses=responses)
 async def ask_question(req: AskRequest):
+    """Three-stage NL → SQL → NL pipeline:
+
+    1. Generate SQL from the question + schema + samples (Gemini)
+    2. Execute the SQL against DuckDB
+    3. Interpret the results back into plain language (Gemini)
+    """
     schema = get_table_schema(req.table_name)
     if not schema:
         raise HTTPException(status_code=404, detail=f"Table '{req.table_name}' not found")

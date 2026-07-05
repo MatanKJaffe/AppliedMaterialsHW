@@ -9,6 +9,7 @@ import { getTables } from './api'
 function AppContent() {
   const { tables, selectedTable, selectTable } = useAppState()
 
+  // On mount, auto-select the first dataset if one exists (e.g. from deploy test data)
   useEffect(() => {
     getTables().then((res) => {
       if (res.tables.length > 0 && !selectedTable) {
@@ -38,6 +39,7 @@ function AppContent() {
 
       <main className="max-w-7xl mx-auto p-6">
         {tables.length === 0 ? (
+          // Landing state: no datasets uploaded yet
           <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
               <svg width="320" height="320" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-red-600/5 w-80 h-80">
@@ -53,6 +55,7 @@ function AppContent() {
             <UploadDataset />
           </div>
         ) : (
+          // Data view: sidebar, table, AI chat side by side
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-8rem)]">
             <aside className="lg:col-span-1 flex flex-col gap-4 overflow-y-auto">
               <UploadDataset />
