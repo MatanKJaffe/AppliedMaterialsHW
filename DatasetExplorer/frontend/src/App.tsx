@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import UploadDataset from './components/UploadDataset'
 import DataTable from './components/DataTable'
 import AskQuestion from './components/AskQuestion'
@@ -8,6 +8,8 @@ import { getTables } from './api'
 
 function AppContent() {
   const { tables, selectedTable, selectTable } = useAppState()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [aiPanelOpen, setAiPanelOpen] = useState(true)
 
   // On mount, auto-select the first dataset if one exists (e.g. from deploy test data)
   useEffect(() => {
@@ -39,7 +41,6 @@ function AppContent() {
 
       <main className="max-w-7xl mx-auto p-6">
         {tables.length === 0 ? (
-          // Landing state: no datasets uploaded yet
           <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
               <svg width="320" height="320" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-red-600/5 w-80 h-80">
@@ -55,18 +56,70 @@ function AppContent() {
             <UploadDataset />
           </div>
         ) : (
-          // Data view: sidebar, table, AI chat side by side
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-8rem)]">
-            <aside className="lg:col-span-1 flex flex-col gap-4 overflow-y-auto">
-              <UploadDataset />
-              <SchemaPanel />
-            </aside>
-            <div className="lg:col-span-2 flex flex-col min-h-0">
+          <div className="flex gap-6 h-[calc(100vh-8rem)]">
+            {/* DataBase panel */}
+            {sidebarOpen ? (
+              <>
+                <aside className="w-72 shrink-0 flex flex-col gap-4 overflow-y-auto">
+                  <UploadDataset />
+                  <SchemaPanel />
+                </aside>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="shrink-0 self-start mt-2 p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                  title="Hide DataBase"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="shrink-0 self-center p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                title="Show DataBase"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m9 18 6-6-6-6" />
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                </svg>
+              </button>
+            )}
+
+            {/* Data table */}
+            <div className="flex-1 min-w-0 flex flex-col">
               <DataTable />
             </div>
-            <div className="lg:col-span-1 flex flex-col min-h-0">
-              <AskQuestion />
-            </div>
+
+            {/* Ai Chat panel */}
+            {aiPanelOpen ? (
+              <>
+                <button
+                  onClick={() => setAiPanelOpen(false)}
+                  className="shrink-0 self-start mt-2 p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                  title="Hide Ai Chat"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+                <aside className="w-80 shrink-0 flex flex-col min-h-0">
+                  <AskQuestion />
+                </aside>
+              </>
+            ) : (
+              <button
+                onClick={() => setAiPanelOpen(true)}
+                className="shrink-0 self-center p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                title="Show Ai Chat"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m15 18-6-6 6-6" />
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                </svg>
+              </button>
+            )}
           </div>
         )}
       </main>

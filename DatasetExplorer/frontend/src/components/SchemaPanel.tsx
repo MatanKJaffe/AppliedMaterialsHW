@@ -54,8 +54,7 @@ export default function SchemaPanel() {
           >
             <div className="flex items-start gap-1.5">
               <span
-                className={`font-medium min-w-0 ${expanded.has(t.name) ? '' : 'truncate'}`}
-                style={expanded.has(t.name) ? {} : { display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                className={`font-medium min-w-0 ${expanded.has(t.name) ? 'break-all' : 'truncate'}`}
               >
                 {t.name}
               </span>
@@ -84,12 +83,30 @@ export default function SchemaPanel() {
         <div className="mt-2 pt-3 border-t border-zinc-800">
           <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Columns</h3>
           <div className="flex flex-col gap-1">
-            {active.columns.map((c) => (
-              <div key={c.name} className="flex justify-between text-xs px-1">
-                <span className="text-zinc-300">{c.name}</span>
-                <span className="text-zinc-500 font-mono">{c.type}</span>
-              </div>
-            ))}
+            {active.columns.map((c) => {
+              const key = `${active.name}::${c.name}`
+              return (
+                <div key={c.name} className="flex items-start gap-1.5 text-xs px-1">
+                  <span className={`text-zinc-300 min-w-0 ${expanded.has(key) ? 'break-all' : 'truncate'}`}>
+                    {c.name}
+                  </span>
+                  {c.name.length > 20 && (
+                    <span
+                      onClick={() => toggleExpand(key)}
+                      className="shrink-0 mt-0.5 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        {expanded.has(key)
+                          ? <><line x1="4" y1="4" x2="20" y2="20" /><line x1="20" y1="4" x2="4" y2="20" /></>
+                          : <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H5.78a1.65 1.65 0 0 0-1.51 1 1.65 1.65 0 0 0 .33 1.82l.04.04A10 10 0 0 0 12 17.5a10 10 0 0 0 5.36-1.5Z" /><path d="m2 2 20 20" /></>
+                        }
+                      </svg>
+                    </span>
+                  )}
+                  <span className="shrink-0 ml-auto text-zinc-500 font-mono">{c.type}</span>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

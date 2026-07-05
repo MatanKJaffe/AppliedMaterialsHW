@@ -32,6 +32,7 @@ export default function DataTable() {
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [compact, setCompact] = useState(true)
 
   // Build a lookup from column name → type using the schema from context
   const selectedSchema = tables.find((t) => t.name === selectedTable)
@@ -79,7 +80,19 @@ export default function DataTable() {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg flex flex-col h-full overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-        <h2 className="text-lg font-semibold">{selectedTable}</h2>
+        <h2 className="text-lg font-semibold break-all min-w-0 mr-4">{selectedTable}</h2>
+        <button
+          onClick={() => setCompact((v) => !v)}
+          className="shrink-0 mr-3 p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+          title={compact ? 'Expand columns to fill width' : 'Fit columns to content'}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {compact
+              ? <><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3" /><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3" /><line x1="12" y1="3" x2="12" y2="21" /></>
+              : <><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3" /><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3" /><line x1="4" y1="9" x2="7" y2="9" /><line x1="17" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="7" y2="15" /><line x1="17" y1="15" x2="20" y2="15" /></>
+            }
+          </svg>
+        </button>
         <div className="relative">
           {search && (
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">
@@ -108,7 +121,7 @@ export default function DataTable() {
             {search ? 'No matching rows' : 'No data'}
           </div>
         ) : (
-          <table className="w-full text-sm text-left">
+          <table className={`w-full text-sm text-left ${compact ? 'table-auto' : 'table-fixed'}`}>
             <thead className="text-xs text-zinc-400 bg-zinc-800/50 sticky top-0">
               <tr>
                 {columns.map((col) => (
