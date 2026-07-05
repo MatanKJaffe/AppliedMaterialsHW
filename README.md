@@ -140,26 +140,9 @@ Set `VITE_API_URL` to change the backend URL (defaults to `http://localhost:8000
 
 ## Deployment
 
-### Backend — Render
+Backend is on Render
 
-1. Push repo to GitHub
-2. [Render](https://render.com) → New Web Service → connect repo
-3. Root: `DatasetExplorer/backend`
-4. Build: `pip install -r requirements.txt`
-5. Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-6. Add `GEMINI_API_KEY` in Environment Variables
-7. Deploy
-
-A `render.yaml` is included for Blueprint-based deployment.
-
-### Frontend — Vercel
-
-1. [Vercel](https://vercel.com) → Add New Project → import repo
-2. Framework: Vite; Root: `DatasetExplorer/frontend`
-3. Add `VITE_API_URL` (your Render URL)
-4. Deploy
-
----
+Frontend  is on Vercel
 
 ## What I'd Do Next
 
