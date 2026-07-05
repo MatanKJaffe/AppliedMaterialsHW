@@ -112,7 +112,7 @@ export default function DataTable() {
             <thead className="text-xs text-zinc-400 bg-zinc-800/50 sticky top-0">
               <tr>
                 {columns.map((col) => (
-                  <th key={col} className="px-4 py-2.5 font-medium whitespace-nowrap">
+                  <th key={col} className="px-4 py-2.5 font-medium">
                     <div className="flex items-center gap-2">
                       <span>{col}</span>
                       <TypeBadge type={colTypes.get(col) ?? ''} />
@@ -125,7 +125,7 @@ export default function DataTable() {
               {data.rows.map((row, i) => (
                 <tr key={i} className="border-b border-zinc-800 hover:bg-zinc-800/30 transition-colors">
                   {columns.map((col) => (
-                    <td key={col} className="px-4 py-2 whitespace-nowrap text-zinc-300">
+                    <td key={col} className="px-4 py-2 text-zinc-300">
                       {row[col]?.toString() ?? ''}
                     </td>
                   ))}
