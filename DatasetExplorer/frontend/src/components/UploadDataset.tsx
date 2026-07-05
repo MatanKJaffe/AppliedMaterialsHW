@@ -52,7 +52,7 @@ export default function UploadDataset() {
         <h2 className="text-xl font-semibold mb-2">Upload CSV</h2>
         <p className="text-zinc-400 mb-6 text-center text-sm">Click to browse or drag a CSV file</p>
 
-        <span className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-full transition-all text-sm disabled:opacity-50" role="button">
+        <span className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-full transition-all text-sm disabled:opacity-50 shadow-lg shadow-red-600/20" role="button">
           {loading ? 'Uploading...' : 'Browse Files'}
         </span>
       </div>

@@ -32,7 +32,7 @@ export default function SchemaPanel() {
             onClick={() => selectTable(t.name)}
             className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${
               t.name === selectedTable
-                ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30'
+                ? 'bg-red-600/15 text-red-400 border border-red-600/30'
                 : 'text-zinc-300 hover:bg-zinc-800 border border-transparent'
             }`}
           >

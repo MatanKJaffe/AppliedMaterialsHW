@@ -55,14 +55,14 @@ export default function DataTable() {
           placeholder="Search..."
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-56"
+          className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-600/50 w-56"
         />
       </div>
 
       <div className="flex-1 overflow-auto">
         {loading && !data ? (
           <div className="flex items-center justify-center h-48">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
           </div>
         ) : !data || data.rows.length === 0 ? (
           <div className="flex items-center justify-center h-48 text-zinc-500">
