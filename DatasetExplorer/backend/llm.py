@@ -15,7 +15,9 @@ def get_client() -> genai.Client:
 
 
 def _build_schema_text(schema: dict, sample_rows: list[dict]) -> str:
-    cols = "\n".join(f"  - {c['name']} ({c['type']})" for c in schema["columns"])
+    cols = "\n".join(
+        f"  - {c['name']} ({c['type']})" for c in schema["columns"]
+    )
     samples = "\n".join(str(r) for r in sample_rows[:5]) if sample_rows else "(no data)"
     return f"""Table: {schema['name']}
 Rows: {schema['row_count']}
@@ -29,12 +31,17 @@ Sample rows:
 _SQL_PROMPT = """You are a DuckDB SQL expert. Given a table schema and a natural language question, generate a single DuckDB-compatible SQL query.
 
 Rules:
-- Return ONLY the SQL query, no explanations, no markdown formatting
-- Use proper DuckDB SQL syntax
-- Use double quotes for table/column names if they contain special characters
-- Limit results to at most 100 rows unless the question asks for all
-- Do not include trailing semicolon
-- If the question cannot be answered with the available data, return: SELECT 'Cannot answer from available data' AS response"""
+- Return ONLY the SQL query — no explanations, no markdown formatting, no backticks
+- Use DuckDB SQL syntax (ILIKE for case-insensitive string matching, DATE_TRUNC for date truncation, etc.)
+- Use double quotes for identifiers that contain special characters or spaces
+- Limit results to at most 100 rows unless the question explicitly asks for all
+- Do not include a trailing semicolon
+- If the question cannot be answered with the available data, return: SELECT 'Cannot answer from available data' AS response
+
+Examples:
+- "average salary" -> SELECT AVG("salary") FROM "table_name"
+- "show me all rows where name contains john" -> SELECT * FROM "table_name" WHERE "name" ILIKE '%john%'
+- "count rows grouped by department" -> SELECT "department", COUNT(*) AS cnt FROM "table_name" GROUP BY "department" ORDER BY cnt DESC"""
 
 _ANSWER_PROMPT = """You are a data analyst. The user asked a question about their dataset. Below is the SQL query that was executed and the results. Answer the user's question in plain, natural language based on these results.
 
@@ -46,7 +53,12 @@ SQL executed:
 Results ({row_count} rows):
 {results}
 
-Provide a concise, helpful answer. If the results are empty or the query returned no data, say so clearly."""
+Guidelines:
+- Provide a concise, helpful answer in plain language
+- If the results are empty or the query returned no data, say so clearly
+- Reference specific numbers and patterns from the data
+- Do not mention SQL or the query unless it adds value
+- If the result has a single value, state it directly"""
 
 
 def generate_sql(schema: dict, sample_rows: list[dict], question: str) -> str:

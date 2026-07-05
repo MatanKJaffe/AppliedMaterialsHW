@@ -2,20 +2,32 @@ from pydantic import BaseModel
 from typing import Optional
 
 
+class ColumnInfo(BaseModel):
+    name: str
+    type: str
+
+
 class TableInfo(BaseModel):
     name: str
-    columns: list[dict]
+    columns: list[ColumnInfo]
     row_count: int
 
 
 class UploadResponse(BaseModel):
     table_name: str
-    columns: list[dict]
+    columns: list[ColumnInfo]
     row_count: int
 
 
 class TablesResponse(BaseModel):
     tables: list[TableInfo]
+
+
+class SchemaResponse(BaseModel):
+    name: str
+    columns: list[ColumnInfo]
+    row_count: int
+    sample_rows: list[dict]
 
 
 class RowQueryParams(BaseModel):
@@ -41,6 +53,7 @@ class AskResponse(BaseModel):
     answer: str
     sql: str
     row_count: int
+    columns: list[str]
 
 
 class ErrorResponse(BaseModel):

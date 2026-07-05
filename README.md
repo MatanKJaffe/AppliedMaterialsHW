@@ -1,120 +1,167 @@
 # Dataset Explorer
 
-Upload CSV datasets, browse their contents, and ask natural-language questions answered by Gemini.
+Upload CSV datasets, browse their contents, and ask natural-language questions answered by Gemini 2.5 Flash.
+
+**Live app:** [https://dataset-explorer.vercel.app](https://dataset-explorer.vercel.app)  
+**API:** [https://dataset-explorer-api.onrender.com](https://dataset-explorer-api.onrender.com)  
+*(Free-tier hosts may need ~30s to wake from sleep)*
+
+---
 
 ## Architecture
 
 ```
-Frontend (Vite + React + Tailwind)     Backend (FastAPI + DuckDB)
+Frontend (Vite + React 19 + Tailwind)     Backend (FastAPI + DuckDB)
 ┌──────────────────────────────┐      ┌──────────────────────────────┐
 │  POST /upload  ─────────────►│      │  In-memory DuckDB            │
 │  GET  /tables  ◄─────────────│      │  (multi-table, resets on     │
 │  GET  /rows    ◄─────────────│      │   restart)                   │
-│  POST /ask     ─────────────►│      │                              │
-│                              │      │  ┌────────────────────────┐  │
-│  - UploadDataset            │      │  │  Gemini 2.5 Flash       │  │
-│  - SchemaPanel (sidebar)    │      │  │  ├─ generate SQL        │  │
-│  - DataTable (paginated)    │      │  │  ├─ execute SQL         │  │
-│  - AskQuestion (chat)       │      │  │  └─ format NL answer    │  │
-└──────────────────────────────┘      └──────────────────────────────┘
+│  GET  /schema/* ◄────────────│      │                              │
+│  POST /ask     ─────────────►│      │  ┌────────────────────────┐  │
+│                              │      │  │  Gemini 2.5 Flash       │  │
+│  UploadDataset (drag & drop) │      │  │  ├─ generate SQL        │  │
+│  SchemaPanel  (sidebar)      │      │  │  ├─ execute SQL         │  │
+│  DataTable    (paginated)    │      │  │  └─ format NL answer    │  │
+│  AskQuestion  (chat)         │      └──────────────────────────────┘
+└──────────────────────────────┘
 ```
 
-**Backend:** FastAPI with an in-memory DuckDB. Each uploaded CSV becomes a named table. The `/ask` endpoint uses Gemini to generate SQL, executes it, then formats the results as plain language.
+### Design decisions
 
-**Frontend:** Thin React client. All data operations go through the API — no direct database access in the browser.
+| Layer | Choice | Rationale |
+|-------|--------|-----------|
+| **Database** | DuckDB (`:memory:`) | CSV-native analytics engine; no schema setup; ideal for ad-hoc querying |
+| **LLM pipeline** | SQL generation → execution → NL interpretation | Separates concerns: each step has a focused prompt, errors are traceable |
+| **Frontend state** | React Context | Appropriate scale (no global state lib needed); co-locates table/schema state |
+| **Styling** | Tailwind + dark theme | Rapid iteration; consistent with modern data tool aesthetics |
 
-## Prerequisites
+---
+
+## LLM Prompt Design
+
+The `/ask` endpoint uses a three-stage pipeline:
+
+### 1. SQL generation (`llm.py`)
+A system prompt instructs Gemini 2.5 Flash to produce DuckDB-compatible SQL. The prompt includes:
+- The table schema (column names + types + row count)
+- Up to 5 sample rows for value distribution awareness
+- Explicit formatting rules (no backticks, no semicolons, `ILIKE` for text search)
+- Guardrails: returns a sentinel value if the question can't be answered from available data
+
+### 2. SQL execution
+The generated SQL runs against DuckDB. If execution fails, the error and SQL are returned to the user for transparency.
+
+### 3. Result interpretation (`llm.py`)
+A second prompt asks Gemini to summarize the results in plain language. The prompt includes:
+- The original question for context
+- The SQL that was executed
+- Up to 20 result rows
+- A directive to mention specific numbers/patterns, and to clearly state if results are empty
+
+---
+
+## API
+
+| Method | Path | Request | Response | Notes |
+|--------|------|---------|----------|-------|
+| `POST` | `/upload` | multipart CSV file | `{table_name, columns[], row_count}` | Creates/replaces a DuckDB table |
+| `GET` | `/tables` | — | `{tables: [{name, columns[], row_count}]}` | All loaded datasets |
+| `GET` | `/rows` | `table`, `page`, `per_page`, `search?` | `{rows[], total, page, per_page}` | Paginated with optional ILIKE search |
+| `GET` | `/schema/{name}` | path param, `?sample=true` | `{name, columns[], row_count, sample_rows[]}` | Schema + optional sample data |
+| `POST` | `/ask` | `{question, table_name}` | `{answer, sql, row_count, columns[]}` | NL → SQL → NL pipeline |
+
+All responses use Pydantic models for consistent shapes. Errors return `{detail: string}`.
+
+---
+
+## React State Management
+
+The frontend uses a lightweight **Context + hooks** pattern:
+
+- **`AppContext`** holds `tables[]`, `selectedTable`, `loading`, and `error` — the global state that multiple components need
+- Each data-fetching component manages its own **local state** (`data`, `loading`, `error`, `page`, `search`) — keeping local concerns scoped
+- `DataTable` debounces search input (300ms) and resets pagination on dataset change
+- `AskQuestion` preserves chat history per dataset, scrolled into view automatically
+- `UploadDataset` supports click-to-browse and **drag-and-drop**
+
+---
+
+## Getting Started
+
+### Prerequisites
 
 - Python 3.10+
 - Node.js 18+
 - A [Gemini API key](https://aistudio.google.com/) (free tier available)
-
-## Setup
+- Never commit real API keys — use `.env` (gitignored)
 
 ### Backend
 
 ```bash
-cd backend
+cd DatasetExplorer/backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # add your GEMINI_API_KEY
-python main.py
+python main.py          # runs on http://localhost:8000
 ```
-
-Runs on `http://localhost:8000`.
 
 ### Frontend
 
 ```bash
-cd frontend
+cd DatasetExplorer/frontend
 npm install
-npm run dev
+npm run dev             # runs on http://localhost:5173
 ```
 
-Runs on `http://localhost:5173`. The API URL defaults to `http://localhost:8000` — set `VITE_API_URL` in the environment to change it.
+Set `VITE_API_URL` to change the backend URL (defaults to `http://localhost:8000`).
+
+---
 
 ## Environment Variables
 
-| Variable           | Required | Default                   | Description                 |
-| ------------------ | -------- | ------------------------- | --------------------------- |
-| `GEMINI_API_KEY` | Yes      | —                        | Google Gemini API key       |
-| `VITE_API_URL`   | No       | `http://localhost:8000` | Backend URL (frontend only) |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `GEMINI_API_KEY` | Yes | — | Google Gemini API key (get one at [aistudio.google.com](https://aistudio.google.com)) |
+| `VITE_API_URL` | No | `http://localhost:8000` | Backend URL (frontend only) |
+| `RELOAD` | No | `true` | Enable/disable FastAPI auto-reload |
+
+---
 
 ## Deployment
 
 ### Backend — Render
 
-1. Push your repo to GitHub.
-2. Go to [render.com](https://render.com) → New → Web Service → connect your repo.
-3. Select the `DatasetExplorer/backend` directory as the root.
-4. Set:
-   - **Runtime:** Python
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - **Health Check Path:** `/tables`
-5. Add environment variable:
-   - `GEMINI_API_KEY` — your Gemini API key
-6. Deploy. Once live, note the URL (e.g., `https://dataset-explorer-api.onrender.com`).
+1. Push repo to GitHub
+2. [Render](https://render.com) → New Web Service → connect repo
+3. Root directory: `DatasetExplorer/backend`
+4. Build: `pip install -r requirements.txt`
+5. Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+6. Add env var: `GEMINI_API_KEY`
+7. Deploy
 
-A `render.yaml` file is included for Blueprint-based deployment.
+A `render.yaml` is included for Blueprint-based deployment.
 
 ### Frontend — Vercel
 
-1. Push your repo to GitHub.
-2. Go to [vercel.com](https://vercel.com) → Add New Project → import your repo.
-3. Set:
-   - **Framework Preset:** Vite
-   - **Root Directory:** `DatasetExplorer/frontend`
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
-4. Add environment variable:
-   - `VITE_API_URL` — your Render backend URL (e.g., `https://dataset-explorer-api.onrender.com`)
-5. Deploy.
+1. [Vercel](https://vercel.com) → Add New Project → import repo
+2. Framework: Vite; Root: `DatasetExplorer/frontend`
+3. Add env var: `VITE_API_URL` (your Render URL)
+4. Deploy
 
-### Connecting Them
+---
 
-Set `VITE_API_URL` on Vercel to your Render backend URL. The frontend will use that as the API base for all requests. No CORS issues — the backend already allows all origins.
+## Security
 
-### Staying Awake
+- API keys are stored in `.env` (gitignored) — never committed
+- Environment variables are set via the deployment dashboard, never baked into images
+- No authentication layer (data is session-local; no PII expected)
 
-Render's free tier spins down after 15 minutes of inactivity. The first request after idle takes ~30s to wake up. For demo purposes this is fine. To keep it warm:
-
-- Set up a free cron job (e.g., cron-job.org) to ping `/tables` every 10 minutes.
-- Or upgrade to Render's $7/mo Starter plan (no sleep).
-
-## API Endpoints
-
-| Method   | Path                                              | Description                                                                                            |
-| -------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `POST` | `/upload`                                       | Upload a CSV file (multipart form). Returns`table_name`, `columns`, `row_count`.                 |
-| `GET`  | `/tables`                                       | List all loaded tables with column info and row counts.                                                |
-| `GET`  | `/rows?table=...&page=1&per_page=50&search=...` | Paginated row data with optional text search.                                                          |
-| `POST` | `/ask`                                          | `{question, table_name}` → Gemini generates SQL, executes it, returns `{answer, sql, row_count}`. |
+---
 
 ## What I'd Do Next
 
-- **Column-type-aware search:** Let users filter by column and use comparison operators (e.g., `age > 30`).
-- **Visualizations:** Allow Gemini to generate Plotly/Chart.js configs so the answer can include charts.
-- **Session persistence:** Replace in-memory DuckDB with a persistent SQLite/DuckDB file so datasets survive restarts.
-- **Query history:** Show a history of generated SQL queries with the ability to re-run or edit them.
-- **Async streaming:** Stream the Gemini response token-by-token for a more responsive chat experience.
+- **Column-type-aware search:** Allow filtering by column and comparison operators (`age > 30`, `name = 'foo'`)
+- **Visualizations:** Have Gemini generate Plotly/Chart.js configs so answers can include charts
+- **Session persistence:** Replace in-memory DuckDB with a persistent file so datasets survive restarts
+- **Query history:** Show a history of generated SQL queries with edit/re-run capability
+- **Async streaming:** Stream Gemini's response token-by-token for a more responsive chat experience

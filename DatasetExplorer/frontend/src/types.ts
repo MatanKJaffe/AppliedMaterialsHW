@@ -26,6 +26,7 @@ export interface AskResponse {
   answer: string
   sql: string
   row_count: number
+  columns: string[]
 }
 
 export interface TablesResponse {

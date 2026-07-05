@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, type DragEvent } from 'react'
 import { uploadCSV } from '../api'
 import { useAppState } from '../context'
 
@@ -6,6 +6,7 @@ export default function UploadDataset() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { refreshTables, selectTable } = useAppState()
 
@@ -37,20 +38,45 @@ export default function UploadDataset() {
     e.target.value = ''
   }
 
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault()
+    setDragging(true)
+  }
+
+  const handleDragLeave = () => setDragging(false)
+
+  const handleDrop = (e: DragEvent) => {
+    e.preventDefault()
+    setDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) handleFile(file)
+  }
+
+  const borderColor = dragging
+    ? 'border-red-500 bg-red-600/5'
+    : 'border-zinc-800'
+
   return (
-    <div className="flex flex-col items-center justify-center p-8 bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg w-full max-w-md mx-auto">
+    <div
+      className={`flex flex-col items-center justify-center p-8 bg-zinc-900 border-2 border-dashed rounded-xl shadow-lg w-full max-w-md mx-auto transition-colors ${borderColor}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div
         onClick={() => fileInputRef.current?.click()}
         className="flex flex-col items-center cursor-pointer w-full"
       >
         <div className="text-4xl mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={dragging ? 'text-red-400' : 'text-zinc-400'}>
             <path d="M12 16V4m0 0L8 8m4-4l4 4" />
             <path d="M20 16v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2" />
           </svg>
         </div>
         <h2 className="text-xl font-semibold mb-2">Upload CSV</h2>
-        <p className="text-zinc-400 mb-6 text-center text-sm">Click to browse or drag a CSV file</p>
+        <p className="text-zinc-400 mb-6 text-center text-sm">
+          {dragging ? 'Drop your file here' : 'Click to browse or drag a CSV file'}
+        </p>
 
         <span className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-full transition-all text-sm disabled:opacity-50 shadow-lg shadow-red-600/20" role="button">
           {loading ? 'Uploading...' : 'Browse Files'}

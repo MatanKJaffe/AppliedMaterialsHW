@@ -7,6 +7,8 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   sql?: string
+  rowCount?: number
+  columns?: string[]
 }
 
 export default function AskQuestion() {
@@ -43,6 +45,8 @@ export default function AskQuestion() {
           role: 'assistant',
           content: res.answer,
           sql: res.sql,
+          rowCount: res.row_count,
+          columns: res.columns,
         },
       ])
     } catch {
@@ -77,7 +81,9 @@ export default function AskQuestion() {
               <div>{msg.content}</div>
               {msg.sql && (
                 <details className="mt-2">
-                  <summary className="text-xs text-zinc-400 cursor-pointer hover:text-zinc-300">SQL used</summary>
+                  <summary className="text-xs text-zinc-400 cursor-pointer hover:text-zinc-300">
+                    SQL used ({msg.rowCount} rows{msg.columns?.length ? `, ${msg.columns.length} columns` : ''})
+                  </summary>
                   <pre className="mt-1 text-xs text-zinc-400 bg-zinc-900 p-2 rounded overflow-x-auto">{msg.sql}</pre>
                 </details>
               )}

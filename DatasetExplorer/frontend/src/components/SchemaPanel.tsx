@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useAppState } from '../context'
 
 export default function SchemaPanel() {
-  const { tables, selectedTable, selectTable, refreshTables, loading } = useAppState()
+  const { tables, selectedTable, selectTable, refreshTables, loading, error } = useAppState()
 
   useEffect(() => {
     refreshTables()
@@ -14,7 +14,11 @@ export default function SchemaPanel() {
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Datasets</h2>
 
-      {tables.length === 0 && !loading && (
+      {error && (
+        <p className="text-xs text-red-400">{error}</p>
+      )}
+
+      {tables.length === 0 && !loading && !error && (
         <p className="text-xs text-zinc-500">No datasets loaded yet.</p>
       )}
 

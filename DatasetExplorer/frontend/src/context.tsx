@@ -6,6 +6,7 @@ interface AppState {
   tables: TableInfo[]
   selectedTable: string | null
   loading: boolean
+  error: string | null
   refreshTables: () => Promise<void>
   selectTable: (name: string | null) => void
 }
@@ -16,14 +17,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [tables, setTables] = useState<TableInfo[]>([])
   const [selectedTable, setSelectedTable] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const refreshTables = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await getTables()
       setTables(res.tables)
-    } catch {
-      // silently fail
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load tables')
     } finally {
       setLoading(false)
     }
@@ -34,7 +37,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AppContext.Provider value={{ tables, selectedTable, loading, refreshTables, selectTable }}>
+    <AppContext.Provider value={{ tables, selectedTable, loading, error, refreshTables, selectTable }}>
       {children}
     </AppContext.Provider>
   )
