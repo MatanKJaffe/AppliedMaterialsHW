@@ -55,10 +55,10 @@ Runs on `http://localhost:5173`. The API URL defaults to `http://localhost:8000`
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `GEMINI_API_KEY` | Yes | — | Google Gemini API key |
-| `VITE_API_URL` | No | `http://localhost:8000` | Backend URL (frontend only) |
+| Variable           | Required | Default                   | Description                 |
+| ------------------ | -------- | ------------------------- | --------------------------- |
+| `GEMINI_API_KEY` | Yes      | —                        | Google Gemini API key       |
+| `VITE_API_URL`   | No       | `http://localhost:8000` | Backend URL (frontend only) |
 
 ## Deployment
 
@@ -98,17 +98,18 @@ Set `VITE_API_URL` on Vercel to your Render backend URL. The frontend will use t
 ### Staying Awake
 
 Render's free tier spins down after 15 minutes of inactivity. The first request after idle takes ~30s to wake up. For demo purposes this is fine. To keep it warm:
+
 - Set up a free cron job (e.g., cron-job.org) to ping `/tables` every 10 minutes.
 - Or upgrade to Render's $7/mo Starter plan (no sleep).
 
 ## API Endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/upload` | Upload a CSV file (multipart form). Returns `table_name`, `columns`, `row_count`. |
-| `GET` | `/tables` | List all loaded tables with column info and row counts. |
-| `GET` | `/rows?table=...&page=1&per_page=50&search=...` | Paginated row data with optional text search. |
-| `POST` | `/ask` | `{question, table_name}` → Gemini generates SQL, executes it, returns `{answer, sql, row_count}`. |
+| Method   | Path                                              | Description                                                                                            |
+| -------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `POST` | `/upload`                                       | Upload a CSV file (multipart form). Returns`table_name`, `columns`, `row_count`.                 |
+| `GET`  | `/tables`                                       | List all loaded tables with column info and row counts.                                                |
+| `GET`  | `/rows?table=...&page=1&per_page=50&search=...` | Paginated row data with optional text search.                                                          |
+| `POST` | `/ask`                                          | `{question, table_name}` → Gemini generates SQL, executes it, returns `{answer, sql, row_count}`. |
 
 ## What I'd Do Next
 
